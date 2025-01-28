@@ -1,24 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Paper,
   Typography,
   TextField,
   Button,
   Grid,
   Box,
-  Divider,
-  CircularProgress,
   Card,
-  CardContent
+  CardContent,
+  CardActions,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Fade,
+  useTheme
 } from '@mui/material';
+import { Delete as DeleteIcon, Edit as EditIcon, Add as AddIcon } from '@mui/icons-material';
 import { toast } from 'react-toastify';
 import { brandService } from '../services/api';
 
 function Brands() {
   const [brands, setBrands] = useState([]);
-  const [newBrand, setNewBrand] = useState({ name: '', description: '' });
+  const [newBrand, setNewBrand] = useState({ name: '' });
+  const [editingBrand, setEditingBrand] = useState(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const theme = useTheme();
 
   useEffect(() => {
     fetchBrands();
@@ -27,13 +35,11 @@ function Brands() {
   const fetchBrands = async () => {
     try {
       setIsLoading(true);
-      setError(null);
       const response = await brandService.getAllBrands();
-      console.log('Brand Response:', response);
-      setBrands(response.data || []);
+      const activeBrands = (response.data || []).filter(brand => !brand.isDeleted);
+      setBrands(activeBrands);
     } catch (error) {
       console.error('Error fetching brands:', error);
-      setError('Failed to fetch brands. Please try again later.');
       toast.error('Failed to fetch brands');
     } finally {
       setIsLoading(false);
@@ -42,124 +48,216 @@ function Brands() {
 
   const handleCreateBrand = async (e) => {
     e.preventDefault();
+    if (!newBrand.name.trim()) {
+      toast.error('Brand name is required');
+      return;
+    }
     try {
       setIsLoading(true);
-      await brandService.createBrand(newBrand);
+      await brandService.createBrand({ name: newBrand.name.trim() });
       toast.success('Brand created successfully!');
-      setNewBrand({ name: '', description: '' });
+      setNewBrand({ name: '' });
       await fetchBrands();
     } catch (error) {
-      console.error('Error creating brand:', error);
       toast.error(error.response?.data?.message || 'Failed to create brand');
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (error) {
-    return (
-      <Box sx={{ maxWidth: 1200, mx: 'auto', mt: 4 }}>
-        <Paper sx={{ p: 3, textAlign: 'center' }}>
-          <Typography color="error" gutterBottom>
-            {error}
-          </Typography>
-          <Button variant="contained" onClick={fetchBrands} sx={{ mt: 2 }}>
-            Retry
-          </Button>
-        </Paper>
-      </Box>
-    );
-  }
+  const handleUpdateBrand = async (e) => {
+    e.preventDefault();
+    if (!editingBrand.name.trim()) {
+      toast.error('Brand name is required');
+      return;
+    }
+    try {
+      setIsLoading(true);
+      await brandService.updateBrand({
+        id: editingBrand.id,
+        name: editingBrand.name.trim()
+      });
+      toast.success('Brand updated successfully!');
+      setIsDialogOpen(false);
+      setEditingBrand(null);
+      await fetchBrands();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to update brand');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteBrand = async (brandId) => {
+    if (window.confirm('Are you sure you want to delete this brand?')) {
+      try {
+        setIsLoading(true);
+        await brandService.softDeleteBrand(brandId);
+        toast.success('Brand deleted successfully!');
+        await fetchBrands();
+      } catch (error) {
+        toast.error(error.response?.data?.message || 'Failed to delete brand');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
 
   return (
-    <Box sx={{ maxWidth: 1200, mx: 'auto', mt: 4 }}>
-      <Paper sx={{ p: 3, mb: 4 }}>
-        <Typography variant="h6" gutterBottom>
-          Create New Brand
-        </Typography>
-        <form onSubmit={handleCreateBrand}>
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
+    <Box sx={{ maxWidth: 1200, mx: 'auto', p: 3 }}>
+      {/* Create Brand Form */}
+      <Card 
+        elevation={0}
+        sx={{ 
+          mb: 4,
+          background: theme.palette.mode === 'dark' 
+            ? 'linear-gradient(145deg, #1a1a1a 0%, #2d2d2d 100%)'
+            : 'linear-gradient(145deg, #ffffff 0%, #f5f5f5 100%)',
+          borderRadius: 3,
+          border: 1,
+          borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'
+        }}
+      >
+        <CardContent sx={{ p: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+            <AddIcon sx={{ mr: 1, color: 'primary.main' }} />
+            <Typography variant="h6">Create New Brand</Typography>
+          </Box>
+          <form onSubmit={handleCreateBrand}>
+            <Box sx={{ display: 'flex', gap: 2 }}>
               <TextField
                 fullWidth
                 label="Brand Name"
                 value={newBrand.name}
-                onChange={(e) => setNewBrand({ ...newBrand, name: e.target.value })}
-                margin="normal"
+                onChange={(e) => setNewBrand({ name: e.target.value })}
                 required
                 disabled={isLoading}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                  }
+                }}
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Description"
-                value={newBrand.description}
-                onChange={(e) => setNewBrand({ ...newBrand, description: e.target.value })}
-                margin="normal"
-                multiline
-                rows={3}
-                disabled={isLoading}
-              />
-            </Grid>
-            <Grid item xs={12}>
               <Button
                 type="submit"
                 variant="contained"
-                color="primary"
-                sx={{ mt: 2 }}
                 disabled={isLoading}
+                sx={{
+                  px: 4,
+                  borderRadius: 2,
+                  background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+                  boxShadow: '0 3px 5px 2px rgba(33, 203, 243, .3)',
+                  '&:hover': {
+                    background: 'linear-gradient(45deg, #1976D2 30%, #00BCD4 90%)',
+                  }
+                }}
               >
-                {isLoading ? 'Creating...' : 'Create Brand'}
+                Create
               </Button>
-            </Grid>
-          </Grid>
-        </form>
-      </Paper>
+            </Box>
+          </form>
+        </CardContent>
+      </Card>
 
-      <Paper sx={{ p: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          Brand List
-        </Typography>
-        <Divider sx={{ mb: 3 }} />
-        
-        {isLoading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-            <CircularProgress />
-          </Box>
-        ) : (
-          <Grid container spacing={3}>
-            {brands.length === 0 ? (
-              <Grid item xs={12}>
-                <Paper sx={{ p: 2, textAlign: 'center' }}>
-                  <Typography variant="body1" color="textSecondary">
-                    No brands found
+      {/* Brands List */}
+      <Grid container spacing={3}>
+        {brands.map((brand) => (
+          <Grid item xs={12} sm={6} md={4} key={brand.id}>
+            <Fade in={true}>
+              <Card 
+                sx={{ 
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  borderRadius: 2,
+                  transition: 'transform 0.2s ease-in-out',
+                  '&:hover': {
+                    transform: 'translateY(-4px)'
+                  }
+                }}
+              >
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    {brand.name}
                   </Typography>
-                </Paper>
-              </Grid>
-            ) : (
-              brands.map((brand, index) => (
-                <Grid item xs={12} sm={6} md={4} key={brand.id || index}>
-                  <Card sx={{ height: '100%' }}>
-                    <CardContent>
-                      <Typography variant="h6" gutterBottom component="div">
-                        {brand.name}
-                      </Typography>
-                      <Divider sx={{ my: 1 }} />
-                      <Typography variant="body2" color="text.secondary">
-                        {brand.description || 'No description available'}
-                      </Typography>
-                      <Typography variant="caption" display="block" sx={{ mt: 2 }}>
-                        Brand ID: {brand.id}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              ))
-            )}
+                </CardContent>
+                <CardActions sx={{ justifyContent: 'flex-end', p: 2 }}>
+                  <IconButton
+                    onClick={() => {
+                      setEditingBrand(brand);
+                      setIsDialogOpen(true);
+                    }}
+                    sx={{ 
+                      color: 'primary.main',
+                      '&:hover': { transform: 'scale(1.1)' }
+                    }}
+                  >
+                    <EditIcon />
+                  </IconButton>
+                  <IconButton 
+                    onClick={() => handleDeleteBrand(brand.id)}
+                    sx={{ 
+                      color: 'error.main',
+                      '&:hover': { transform: 'scale(1.1)' }
+                    }}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </CardActions>
+              </Card>
+            </Fade>
           </Grid>
-        )}
-      </Paper>
+        ))}
+      </Grid>
+
+      {/* Edit Dialog */}
+      <Dialog 
+        open={isDialogOpen} 
+        onClose={() => setIsDialogOpen(false)}
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            minWidth: 400
+          }
+        }}
+      >
+        <DialogTitle>Edit Brand</DialogTitle>
+        <form onSubmit={handleUpdateBrand}>
+          <DialogContent>
+            <TextField
+              fullWidth
+              label="Brand Name"
+              value={editingBrand?.name || ''}
+              onChange={(e) => setEditingBrand({ ...editingBrand, name: e.target.value })}
+              required
+              sx={{ mt: 1 }}
+            />
+          </DialogContent>
+          <DialogActions sx={{ p: 2.5 }}>
+            <Button 
+              onClick={() => setIsDialogOpen(false)}
+              sx={{ borderRadius: 2 }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="submit" 
+              variant="contained"
+              sx={{
+                borderRadius: 2,
+                background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+                boxShadow: '0 3px 5px 2px rgba(33, 203, 243, .3)',
+                '&:hover': {
+                  background: 'linear-gradient(45deg, #1976D2 30%, #00BCD4 90%)',
+                }
+              }}
+            >
+              Update
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
     </Box>
   );
 }

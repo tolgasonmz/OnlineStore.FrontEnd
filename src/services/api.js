@@ -21,7 +21,9 @@ export const authService = {
 // Brand Services
 export const brandService = {
     getAllBrands: () => api.get('/api/Brand/GetAllBrands'),
-    createBrand: (brandData) => api.post('/api/Brand/CreateBrand', brandData)
+    createBrand: (brandData) => api.post('/api/Brand/CreateBrand', brandData),
+    updateBrand: (brandData) => api.post('/api/Brand/UpdateBrand', brandData),
+    softDeleteBrand: (id) => api.post('/api/Brand/DeleteBrand', { id})
 };
 
 // Product Services
@@ -29,7 +31,15 @@ export const productService = {
     getAllProducts: () => api.get('/api/Product/GetAllProducts'),
     createProduct: (productData) => api.post('/api/Product/CreateProducts', productData),
     updateProduct: (productData) => api.post('/api/Product/UpdateProducts', productData),
-    deleteProduct: (productId) => api.post('/api/Product/DeleteProducts', productId)
+    softDeleteProduct: (id) => api.post('/api/Product/DeleteProducts', {id})
+};
+
+// Category Services
+export const categoryService = {
+    getAllCategories: () => api.get('/api/Category/GetAllCategories'),
+    createCategory: (data) => api.post('/api/Category/CreateCategory', data),
+    updateCategory: (data) => api.post('/api/Category/UpdateCategory', data),
+    softDeleteCategory: (id) => api.post('/api/Category/DeleteCategory', { id})
 };
 
 // Interceptor to add auth token

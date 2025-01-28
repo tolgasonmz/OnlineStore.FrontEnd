@@ -12,52 +12,41 @@ import {
   ListItemIcon,
   Tooltip,
   Divider,
-  useMediaQuery,
   Badge,
-  Switch,
-  FormControlLabel
+  Container,
+  Stack,
 } from '@mui/material';
 import {
-  Menu as MenuIcon,
-  Inventory as InventoryIcon,
-  Category as CategoryIcon,
-  Logout as LogoutIcon,
-  Person as PersonIcon,
-  Dashboard as DashboardIcon,
+  Inventory2 as InventoryIcon,
+  CategoryRounded as CategoryIcon,
+  LogoutRounded as LogoutIcon,
+  PersonRounded as PersonIcon,
+  HomeRounded as HomeIcon,
   LightMode as LightModeIcon,
   DarkMode as DarkModeIcon,
-  ShoppingCart as ShoppingCartIcon,
-  Info as InfoIcon,
-  ContactSupport as ContactIcon,
-  QuestionAnswer as FAQIcon,
-  Login as LoginIcon
+  ShoppingCartRounded as ShoppingCartIcon,
+  InfoRounded as InfoIcon,
+  SupportRounded as ContactIcon,
+  QuestionAnswerRounded as FAQIcon,
+  LoginRounded as LoginIcon,
+  StorefrontRounded as StoreIcon,
+  SettingsRounded as SettingsIcon,
+  BrandingWatermarkRounded as BrandIcon,
 } from '@mui/icons-material';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { useTheme as useMuiTheme } from '@mui/material/styles';
 import { useCart } from '../context/CartContext';
 import Cart from './Cart';
 
 function Navigation() {
   const { isAuthenticated, logout, user } = useAuth();
-  const muiTheme = useMuiTheme();
   const { mode, toggleTheme } = useTheme();
   const { cartCount } = useCart();
-  const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
   const location = useLocation();
   
-  const [mobileMenuAnchor, setMobileMenuAnchor] = useState(null);
   const [userMenuAnchor, setUserMenuAnchor] = useState(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
-
-  const handleMobileMenuOpen = (event) => {
-    setMobileMenuAnchor(event.currentTarget);
-  };
-
-  const handleMobileMenuClose = () => {
-    setMobileMenuAnchor(null);
-  };
 
   const handleUserMenuOpen = (event) => {
     setUserMenuAnchor(event.currentTarget);
@@ -76,193 +65,287 @@ function Navigation() {
     setIsCartOpen(!isCartOpen);
   };
 
-  const menuItems = [
-    { text: 'Home', icon: <DashboardIcon />, path: '/home' },
-    { text: 'About', icon: <InfoIcon />, path: '/about' },
-    { text: 'Contact', icon: <ContactIcon />, path: '/contact' },
-    { text: 'FAQ', icon: <FAQIcon />, path: '/faq' },
-    { text: 'Brands', icon: <CategoryIcon />, path: '/brands', protected: true },
-    { text: 'Products', icon: <InventoryIcon />, path: '/products', protected: true },
-  ];
-
   const isCurrentPath = (path) => location.pathname === path;
+
+  const menuItems = {
+    main: [
+      { text: 'Home', icon: <HomeIcon />, path: '/home' },
+    ],
+    shop: [
+      { text: 'Products', icon: <InventoryIcon />, path: '/products', protected: true },
+      { text: 'Categories', icon: <CategoryIcon />, path: '/categories', protected: true },
+      { text: 'Brands', icon: <BrandIcon />, path: '/brands', protected: true },
+    ],
+    info: [
+      { text: 'About', icon: <InfoIcon />, path: '/about' },
+      { text: 'Contact', icon: <ContactIcon />, path: '/contact' },
+      { text: 'FAQ', icon: <FAQIcon />, path: '/faq' },
+    ]
+  };
 
   return (
     <>
-      <AppBar position="static" elevation={1} sx={{ bgcolor: 'background.paper' }}>
-        <Toolbar>
-          {isMobile && (
-            <IconButton
-              color="primary"
-              edge="start"
-              onClick={handleMobileMenuOpen}
-              sx={{ mr: 2 }}
+      <AppBar 
+        position="fixed" 
+        elevation={0}
+        sx={{ 
+          backdropFilter: 'blur(8px)',
+          bgcolor: mode === 'light' 
+            ? 'rgba(255, 255, 255, 0.9)' 
+            : 'rgba(18, 18, 18, 0.9)',
+          borderBottom: 1,
+          borderColor: mode === 'light' 
+            ? 'rgba(0, 0, 0, 0.06)' 
+            : 'rgba(255, 255, 255, 0.06)',
+        }}
+      >
+        <Container maxWidth="xl">
+          <Toolbar disableGutters>
+            {/* Logo */}
+            <Typography
+              variant="h6"
+              component={Link}
+              to="/home"
+              sx={{ 
+                background: mode === 'light'
+                  ? 'linear-gradient(45deg, #2563eb, #4f46e5)'
+                  : 'linear-gradient(45deg, #60a5fa, #818cf8)',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                color: 'transparent',
+                fontWeight: 700,
+                textDecoration: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                mr: 4
+              }}
             >
-              <MenuIcon />
-            </IconButton>
-          )}
+              <StoreIcon sx={{ 
+                color: mode === 'light' ? '#2563eb' : '#60a5fa',
+                fontSize: '2rem'
+              }} />
+              TLG Store
+            </Typography>
 
-          <DashboardIcon color="primary" sx={{ mr: 2 }} />
-          <Typography
-            variant="h6"
-            component={Link}
-            to="/home"
-            sx={{ 
-              flexGrow: 1, 
-              color: 'text.primary', 
-              fontWeight: 600,
-              textDecoration: 'none'
-            }}
-          >
-            TLG Online Store
-          </Typography>
-
-          {!isMobile && (
-            <Box sx={{ display: 'flex', gap: 1, mr: 2 }}>
-              {menuItems
-                .filter(item => !item.protected || isAuthenticated)
-                .map((item) => (
+            {/* Main Menu Items */}
+            <Stack 
+              direction="row" 
+              spacing={1}
+              sx={{ flexGrow: 1 }}
+            >
+              {Object.values(menuItems).flat().map((item) => {
+                if (item.protected && !isAuthenticated) return null;
+                return (
                   <Button
                     key={item.text}
                     component={Link}
                     to={item.path}
-                    color="inherit"
-                    sx={{
-                      px: 3,
-                      py: 1,
-                      color: isCurrentPath(item.path) ? 'primary.main' : 'text.primary',
-                      bgcolor: isCurrentPath(item.path) ? 'action.selected' : 'transparent',
-                      '&:hover': {
-                        bgcolor: 'action.hover',
-                      },
-                    }}
                     startIcon={item.icon}
+                    sx={{
+                      color: isCurrentPath(item.path)
+                        ? mode === 'light' ? '#2563eb' : '#60a5fa'
+                        : mode === 'light' ? '#64748b' : '#94a3b8',
+                      '&:hover': {
+                        bgcolor: mode === 'light' 
+                          ? 'rgba(37, 99, 235, 0.08)'
+                          : 'rgba(96, 165, 250, 0.08)',
+                        color: mode === 'light' ? '#2563eb' : '#60a5fa',
+                      },
+                      textTransform: 'none',
+                      px: 2,
+                      py: 1,
+                      borderRadius: 2,
+                      ...(isCurrentPath(item.path) && {
+                        bgcolor: mode === 'light' 
+                          ? 'rgba(37, 99, 235, 0.08)'
+                          : 'rgba(96, 165, 250, 0.08)',
+                      })
+                    }}
                   >
                     {item.text}
                   </Button>
-                ))}
-            </Box>
-          )}
+                );
+              })}
+            </Stack>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Tooltip title={`Switch to ${mode === 'light' ? 'dark' : 'light'} mode`}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={mode === 'dark'}
-                    onChange={toggleTheme}
-                    icon={<LightModeIcon />}
-                    checkedIcon={<DarkModeIcon />}
-                  />
-                }
-                label=""
-              />
-            </Tooltip>
-
-            {isAuthenticated && (
-              <Tooltip title="Shopping Cart">
-                <IconButton onClick={toggleCart} color="inherit" sx={{ color: 'text.primary' }}>
-                  <Badge badgeContent={cartCount} color="primary">
-                    <ShoppingCartIcon />
-                  </Badge>
-                </IconButton>
-              </Tooltip>
-            )}
-
-            {isAuthenticated ? (
-              <Tooltip title="Account settings">
-                <IconButton onClick={handleUserMenuOpen} size="small">
-                  <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
-                    <PersonIcon />
-                  </Avatar>
-                </IconButton>
-              </Tooltip>
-            ) : (
-              <Button
-                component={Link}
-                to="/auth"
-                color="primary"
-                variant="contained"
-                startIcon={<LoginIcon />}
-              >
-                Login
-              </Button>
-            )}
-          </Box>
-
-          {/* Mobile Menu */}
-          <Menu
-            anchorEl={mobileMenuAnchor}
-            open={Boolean(mobileMenuAnchor)}
-            onClose={handleMobileMenuClose}
-            PaperProps={{
-              sx: { width: 200, maxWidth: '100%' }
-            }}
-          >
-            {menuItems
-              .filter(item => !item.protected || isAuthenticated)
-              .map((item) => (
-                <MenuItem
-                  key={item.text}
-                  component={Link}
-                  to={item.path}
-                  onClick={handleMobileMenuClose}
-                  selected={isCurrentPath(item.path)}
+            {/* Right Side Actions */}
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Tooltip title={mode === 'light' ? 'Dark mode' : 'Light mode'}>
+                <IconButton 
+                  onClick={toggleTheme}
+                  sx={{
+                    color: mode === 'light' ? '#64748b' : '#94a3b8',
+                    '&:hover': {
+                      bgcolor: mode === 'light' 
+                        ? 'rgba(37, 99, 235, 0.08)'
+                        : 'rgba(96, 165, 250, 0.08)',
+                    }
+                  }}
                 >
-                  <ListItemIcon>{item.icon}</ListItemIcon>
-                  <Typography variant="body2">{item.text}</Typography>
-                </MenuItem>
-              ))}
-            <Divider />
-            <MenuItem onClick={toggleTheme}>
-              <ListItemIcon>
-                {mode === 'light' ? <DarkModeIcon /> : <LightModeIcon />}
-              </ListItemIcon>
-              <Typography variant="body2">
-                {mode === 'light' ? 'Dark Mode' : 'Light Mode'}
-              </Typography>
-            </MenuItem>
-            {isAuthenticated && (
-              <MenuItem onClick={toggleCart}>
-                <ListItemIcon>
-                  <Badge badgeContent={cartCount} color="primary">
-                    <ShoppingCartIcon />
-                  </Badge>
-                </ListItemIcon>
-                <Typography variant="body2">Cart</Typography>
-              </MenuItem>
-            )}
-          </Menu>
+                  {mode === 'light' ? <DarkModeIcon /> : <LightModeIcon />}
+                </IconButton>
+              </Tooltip>
 
-          {/* User Menu */}
-          <Menu
-            anchorEl={userMenuAnchor}
-            open={Boolean(userMenuAnchor)}
-            onClose={handleUserMenuClose}
-            PaperProps={{
-              sx: { width: 220, maxWidth: '100%' }
-            }}
-          >
-            <Box sx={{ px: 2, py: 1 }}>
-              <Typography variant="subtitle1" color="text.primary">
-                {user?.email || 'User'}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Administrator
-              </Typography>
-            </Box>
-            <Divider />
-            <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
-              <ListItemIcon>
-                <LogoutIcon color="error" />
-              </ListItemIcon>
-              Logout
-            </MenuItem>
-          </Menu>
-        </Toolbar>
+              {isAuthenticated && (
+                <Tooltip title="Shopping Cart">
+                  <IconButton 
+                    onClick={toggleCart}
+                    sx={{
+                      color: mode === 'light' ? '#64748b' : '#94a3b8',
+                      '&:hover': {
+                        bgcolor: mode === 'light' 
+                          ? 'rgba(37, 99, 235, 0.08)'
+                          : 'rgba(96, 165, 250, 0.08)',
+                      }
+                    }}
+                  >
+                    <Badge 
+                      badgeContent={cartCount}
+                      sx={{
+                        '& .MuiBadge-badge': {
+                          bgcolor: mode === 'light' ? '#2563eb' : '#60a5fa',
+                          color: '#ffffff'
+                        }
+                      }}
+                    >
+                      <ShoppingCartIcon />
+                    </Badge>
+                  </IconButton>
+                </Tooltip>
+              )}
+
+              {isAuthenticated ? (
+                <Tooltip title="Account settings">
+                  <IconButton 
+                    onClick={handleUserMenuOpen}
+                    sx={{
+                      p: 0.5,
+                      border: 2,
+                      borderColor: mode === 'light' 
+                        ? 'rgba(37, 99, 235, 0.2)'
+                        : 'rgba(96, 165, 250, 0.2)',
+                      '&:hover': {
+                        bgcolor: mode === 'light' 
+                          ? 'rgba(37, 99, 235, 0.08)'
+                          : 'rgba(96, 165, 250, 0.08)',
+                      }
+                    }}
+                  >
+                    <Avatar 
+                      sx={{ 
+                        width: 32, 
+                        height: 32,
+                        bgcolor: mode === 'light' ? '#2563eb' : '#60a5fa'
+                      }}
+                    >
+                      <PersonIcon />
+                    </Avatar>
+                  </IconButton>
+                </Tooltip>
+              ) : (
+                <Button
+                  component={Link}
+                  to="/auth"
+                  variant="contained"
+                  startIcon={<LoginIcon />}
+                  sx={{ 
+                    borderRadius: 2,
+                    bgcolor: mode === 'light' ? '#2563eb' : '#60a5fa',
+                    '&:hover': {
+                      bgcolor: mode === 'light' ? '#1d4ed8' : '#3b82f6'
+                    },
+                    textTransform: 'none',
+                    px: 3
+                  }}
+                >
+                  Login
+                </Button>
+              )}
+            </Stack>
+
+            {/* User Menu */}
+            <Menu
+              anchorEl={userMenuAnchor}
+              open={Boolean(userMenuAnchor)}
+              onClose={handleUserMenuClose}
+              PaperProps={{
+                elevation: 3,
+                sx: { 
+                  width: 220,
+                  maxWidth: '100%',
+                  mt: 1.5,
+                  borderRadius: 2,
+                  overflow: 'visible',
+                  filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.15))',
+                  '&:before': {
+                    content: '""',
+                    display: 'block',
+                    position: 'absolute',
+                    top: 0,
+                    right: 14,
+                    width: 10,
+                    height: 10,
+                    bgcolor: 'background.paper',
+                    transform: 'translateY(-50%) rotate(45deg)',
+                    zIndex: 0,
+                  },
+                }
+              }}
+              transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+              anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+            >
+              <Box sx={{ px: 2, py: 1.5 }}>
+                <Typography variant="subtitle1" color="text.primary" sx={{ fontWeight: 500 }}>
+                  {user?.email || 'User'}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Administrator
+                </Typography>
+              </Box>
+              <Divider />
+              <MenuItem 
+                component={Link} 
+                to="/settings" 
+                onClick={handleUserMenuClose}
+                sx={{
+                  py: 1.5,
+                  '&:hover': {
+                    bgcolor: mode === 'light' 
+                      ? 'rgba(37, 99, 235, 0.08)'
+                      : 'rgba(96, 165, 250, 0.08)',
+                  }
+                }}
+              >
+                <ListItemIcon>
+                  <SettingsIcon fontSize="small" />
+                </ListItemIcon>
+                Settings
+              </MenuItem>
+              <MenuItem 
+                onClick={handleLogout} 
+                sx={{ 
+                  color: 'error.main',
+                  py: 1.5,
+                  '&:hover': {
+                    bgcolor: 'error.lighter',
+                  }
+                }}
+              >
+                <ListItemIcon>
+                  <LogoutIcon color="error" fontSize="small" />
+                </ListItemIcon>
+                Logout
+              </MenuItem>
+            </Menu>
+          </Toolbar>
+        </Container>
       </AppBar>
 
       <Cart isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+      
+      {/* Add toolbar spacing since AppBar is fixed */}
+      <Toolbar />
     </>
   );
 }
