@@ -65,7 +65,7 @@ export const CartProvider = ({ children }) => {
         quantity: 1
       };
 
-      toast.success(`${product.name} added to cart`);
+      toast.success(`${product.title} added to cart`);
       return [...prevItems, newItem];
     });
   };
